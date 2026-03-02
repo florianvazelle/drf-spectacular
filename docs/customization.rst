@@ -157,7 +157,7 @@ Usually, you cannot easily decorate or modify ``View``, ``Serializer`` or ``Fiel
 Extensions provide a way to hook into the introspection without actually touching the library.
 
 All extensions work on the same principle. You provide a ``target_class`` (import path
-string or actual class) and then state what *drf-spectcular* should use instead of what
+string or actual class) and then state what *drf-spectacular* should use instead of what
 it would normally discover.
 
 .. important:: The extensions register themselves automatically. Just be sure that the Python
@@ -193,6 +193,16 @@ is to augment or switch out the encountered view (only for schema generation). S
 the discovered class ``class Fixed(self.target_class)`` with a ``queryset`` or
 ``serializer_class`` attribute will often solve most issues.
 
+You must implement the :py:meth:`view_replacement() <drf_spectacular.extensions.OpenApiViewExtension.view_replacement>` method
+— this is the abstract hook that *drf-spectacular* calls during schema generation. The method
+must return a view class (or subclass of the target); that returned class temporarily replaces
+the original view only for introspection purposes.
+
+**Missing queryset:** When a view's queryset is set dynamically (e.g. filtered per user) or
+absent at class definition time, introspection cannot infer the model and thus the response
+schema. Provide a minimal queryset such as ``Model.objects.none()`` so *drf-spectacular* can
+introspect the model without executing real database queries:
+
 .. code-block:: python
 
     class Fix4(OpenApiViewExtension):
@@ -203,6 +213,21 @@ the discovered class ``class Fixed(self.target_class)`` with a ``queryset`` or
 
             class Fixed(self.target_class):
                 queryset = UserAddress.objects.none()
+            return Fixed
+
+**Missing serializer_class:** When a view does not declare a ``serializer_class``, add it in
+the replacement so the request/response schema can be inferred:
+
+.. code-block:: python
+
+    class Fix2(OpenApiViewExtension):
+        target_class = 'oscarapi.views.product.ProductAvailability'
+
+        def view_replacement(self):
+            from oscarapi.serializers.product import AvailabilitySerializer
+
+            class Fixed(self.target_class):
+                serializer_class = AvailabilitySerializer
             return Fixed
 
 Specify authentication with :py:class:`OpenApiAuthenticationExtension <drf_spectacular.extensions.OpenApiAuthenticationExtension>`
@@ -235,7 +260,17 @@ Declare field output with :py:class:`OpenApiSerializerFieldExtension <drf_specta
 This is mainly targeted to custom ``SerializerField``'s that are within library code. This extension
 is functionally equivalent to :py:func:`@extend_schema_field <drf_spectacular.utils.extend_schema_field>`
 
+Use :py:func:`build_basic_type <drf_spectacular.plumbing.build_basic_type>` to convert a Python type
+or :py:class:`OpenApiTypes <drf_spectacular.types.OpenApiTypes>` value into an OpenAPI schema dict
+(e.g. ``{'type': 'string'}``). Related helpers :py:func:`build_array_type <drf_spectacular.plumbing.build_array_type>`
+and :py:func:`build_object_type <drf_spectacular.plumbing.build_object_type>` are available for
+arrays and objects.
+
+
 .. code-block:: python
+
+    from drf_spectacular.plumbing import build_basic_type
+    from drf_spectacular.types import OpenApiTypes
 
     class CategoryFieldFix(OpenApiSerializerFieldExtension):
         target_class = 'oscarapi.serializers.fields.CategoryField'
