@@ -308,10 +308,33 @@ more thing you can do. Postprocessing hooks run at the very end of schema genera
 the choice ``Enum`` are consolidated into component objects. You can register hooks with the
 ``POSTPROCESSING_HOOKS`` setting.
 
+Each hook receives the full `OpenAPI root object <https://spec.openapis.org/oas/v3.0.3#openapi-object>`_ and must return the (possibly modified) schema.
+The ``result`` dict has the standard OpenAPI 3 structure: ``openapi``, ``info``, ``paths``,
+``components`` (schemas, parameters, etc.), and optionally ``webhooks``, ``servers``, ``tags``.
+Modify ``result`` in place or return a new dict.
+
 .. code-block:: python
 
-    def custom_postprocessing_hook(result, generator, request, public):
-        # your modifications to the schema in parameter result
+    from typing import Any, Dict, Optional
+
+    def custom_postprocessing_hook(
+        result: Dict[str, Any],
+        generator: "SchemaGenerator",
+        request: Optional["HttpRequest"],
+        public: bool,
+    ) -> Dict[str, Any]:
+        """
+        result: the OpenAPI root object, e.g.: 
+        {
+            "openapi": "3.0.3",
+            "info": {"title": "API", "version": "1.0.0"},
+            "paths": {},
+            "components": {"schemas": {}, "parameters": {}, "responses": {}},
+        }  
+        generator: the SchemaGenerator instance (access registry, etc.)
+        request: the HTTP request that triggered schema generation, or None
+        public: True when generating a public schema (excludes internal endpoints)
+        """
         return result
 
 .. note:: Please note that setting ``POSTPROCESSING_HOOKS`` will override the default. If you intend to
