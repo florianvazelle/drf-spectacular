@@ -8,6 +8,7 @@ import sys
 import types
 import typing
 import urllib.parse
+import warnings
 from abc import ABCMeta
 from collections import OrderedDict, defaultdict
 from decimal import Decimal
@@ -1337,12 +1338,14 @@ def _resolve_typeddict(hint):
 
 
 def is_higher_order_type_hint(hint) -> bool:
-    return isinstance(hint, (
-        getattr(types, 'GenericAlias', _Sentinel),
-        getattr(types, 'UnionType', _Sentinel),
-        getattr(typing, '_GenericAlias', _Sentinel),
-        getattr(typing, '_UnionGenericAlias', _Sentinel),
-    ))
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        return isinstance(hint, (
+            getattr(types, 'GenericAlias', _Sentinel),
+            getattr(types, 'UnionType', _Sentinel),
+            getattr(typing, '_GenericAlias', _Sentinel),
+            getattr(typing, '_UnionGenericAlias', _Sentinel),
+        ))
 
 
 def resolve_type_hint(hint):
