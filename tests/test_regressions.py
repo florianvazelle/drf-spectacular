@@ -962,11 +962,11 @@ def test_schema_contains_only_allowed_methods(no_warnings):
     class XSerializer(serializers.Serializer):
         integer = serializers.IntegerField()
 
-    class X(models.Model):
+    class M16(models.Model):
         integer = models.IntegerField()
 
     class XAPIView(generics.ListCreateAPIView):
-        model = X
+        model = M16
         serializer_class = XSerializer
 
     urlpatterns = [
