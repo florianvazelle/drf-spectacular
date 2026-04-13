@@ -1392,6 +1392,10 @@ def resolve_type_hint(hint):
         mixin_base_types = [t for t in hint.__mro__ if is_basic_type(t)]
         if mixin_base_types:
             schema.update(build_basic_type(mixin_base_types[0]))
+        if issubclass(hint, Choices):
+            if spectacular_settings.ENUM_GENERATE_CHOICE_DESCRIPTION:
+                schema['description'] = build_choice_description_list(hint.choices)
+            schema['x-spec-enum-id'] = list_hash([(k, v) for k, v in hint.choices if k not in ('', None)])
         return schema
     elif isinstance(hint, TYPED_DICT_META_TYPES):
         return _resolve_typeddict(hint)
