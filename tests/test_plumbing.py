@@ -197,7 +197,12 @@ if DJANGO_VERSION > '3':
 
     TYPE_HINT_TEST_PARAMS.append((
         LanguageChoices,
-        {'enum': ['en', 'de'], 'type': 'string', 'x-spec-enum-id': '982ab9eaa2725610'}
+        {
+            'enum': ['en', 'de'],
+            'type': 'string',
+            'description': '* `en` - En\n* `de` - De',
+            'x-spec-enum-id': '982ab9eaa2725610'
+        }
     ))
 
 TYPE_HINT_TEST_PARAMS.append((
