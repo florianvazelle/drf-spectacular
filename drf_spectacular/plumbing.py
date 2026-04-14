@@ -232,6 +232,9 @@ def get_view_model(view, emit_warnings=True):
 
 def get_doc(obj) -> str:
     """ get doc string with fallback on obj's base classes (ignoring DRF documentation). """
+    if spectacular_settings.DISABLE_DOCSTRING_DESCRIPTIONS:
+        return ''
+
     def post_cleanup(doc: str) -> str:
         # also clean up trailing whitespace for each line
         return '\n'.join(line.rstrip() for line in doc.rstrip().split('\n'))
