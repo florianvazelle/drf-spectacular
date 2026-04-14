@@ -2608,7 +2608,10 @@ def test_disable_docstring_descriptions(no_warnings, disable):
         assert schema['paths']['/x/']['get']['description'] == 'view class docstring'
         assert schema['paths']['/x/{id}/']['get']['description'] == 'action docstring'
         assert schema['components']['schemas']['X']['description'] == 'serializer docstring'
-        assert schema['components']['schemas']['X']['properties']['field_method']['description'] == 'method field docstring'
+        assert (
+            schema['components']['schemas']['X']['properties']['field_method']['description']
+            == 'method field docstring'
+        )
 
 
 @pytest.mark.parametrize('list_variation', [

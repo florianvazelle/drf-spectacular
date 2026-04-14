@@ -511,4 +511,4 @@ def test_get_doc_with_method_docstring(disable):
         if disable:
             assert doc == ""
         else:
-            assert doc == "a docstring" 
+            assert doc == "a docstring"
