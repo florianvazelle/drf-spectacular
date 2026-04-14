@@ -193,15 +193,16 @@ is to augment or switch out the encountered view (only for schema generation). S
 the discovered class ``class Fixed(self.target_class)`` with a ``queryset`` or
 ``serializer_class`` attribute will often solve most issues.
 
-You must implement the :py:meth:`view_replacement() <drf_spectacular.extensions.OpenApiViewExtension.view_replacement>` method
-— this is the abstract hook that *drf-spectacular* calls during schema generation. The method
-must return a view class (or subclass of the target); that returned class temporarily replaces
-the original view only for introspection purposes.
+Implement :py:meth:`view_replacement() <drf_spectacular.extensions.OpenApiViewExtension.view_replacement>`
+to return a view class that temporarily replaces the original during schema generation.
+You can either build a new class-like view or temporarily augment the existing one.
 
-**Missing queryset:** When a view's queryset is set dynamically (e.g. filtered per user) or
-absent at class definition time, introspection cannot infer the model and thus the response
-schema. Provide a minimal queryset such as ``Model.objects.none()`` so *drf-spectacular* can
-introspect the model without executing real database queries:
+**Missing queryset:** When a view's queryset is dynamic or absent at class definition time,
+introspection cannot infer the model. Provide ``Model.objects.none()`` so *drf-spectacular*
+can resolve the model without executing real queries.
+
+**Missing serializer_class:** When a view does not declare a ``serializer_class``, add it in
+the replacement so the request/response schema can be inferred:
 
 .. code-block:: python
 
@@ -212,21 +213,9 @@ introspect the model without executing real database queries:
             from oscar.apps.address.models import UserAddress
 
             class Fixed(self.target_class):
+                # Example 1: missing or dynamic information
                 queryset = UserAddress.objects.none()
-            return Fixed
-
-**Missing serializer_class:** When a view does not declare a ``serializer_class``, add it in
-the replacement so the request/response schema can be inferred:
-
-.. code-block:: python
-
-    class Fix2(OpenApiViewExtension):
-        target_class = 'oscarapi.views.product.ProductAvailability'
-
-        def view_replacement(self):
-            from oscarapi.serializers.product import AvailabilitySerializer
-
-            class Fixed(self.target_class):
+                # Example 2: another example for a common issue
                 serializer_class = AvailabilitySerializer
             return Fixed
 
@@ -258,13 +247,13 @@ Declare field output with :py:class:`OpenApiSerializerFieldExtension <drf_specta
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 This is mainly targeted to custom ``SerializerField``'s that are within library code. This extension
-is functionally equivalent to :py:func:`@extend_schema_field <drf_spectacular.utils.extend_schema_field>`
+is functionally equivalent to using the decorator :py:func:`@extend_schema_field <drf_spectacular.utils.extend_schema_field>`,
+but provides more flexibility when dealing with complex or dynamic situations.
 
-Use :py:func:`build_basic_type <drf_spectacular.plumbing.build_basic_type>` to convert a Python type
+For example use ``drf_spectacular.plumbing.build_basic_type`` to convert a Python type
 or :py:class:`OpenApiTypes <drf_spectacular.types.OpenApiTypes>` value into an OpenAPI schema dict
-(e.g. ``{'type': 'string'}``). Related helpers :py:func:`build_array_type <drf_spectacular.plumbing.build_array_type>`
-and :py:func:`build_object_type <drf_spectacular.plumbing.build_object_type>` are available for
-arrays and objects.
+(e.g. ``{'type': 'string'}``). Related helpers ``drf_spectacular.plumbing.build_array_type>``
+and ``drf_spectacular.plumbing.build_object_type`` are available for arrays and objects.
 
 
 .. code-block:: python
@@ -324,13 +313,13 @@ Modify ``result`` in place or return a new dict.
         public: bool,
     ) -> Dict[str, Any]:
         """
-        result: the OpenAPI root object, e.g.: 
+        result: the OpenAPI root object, e.g.:
         {
             "openapi": "3.0.3",
             "info": {"title": "API", "version": "1.0.0"},
             "paths": {},
             "components": {"schemas": {}, "parameters": {}, "responses": {}},
-        }  
+        }
         generator: the SchemaGenerator instance (access registry, etc.)
         request: the HTTP request that triggered schema generation, or None
         public: True when generating a public schema (excludes internal endpoints)
